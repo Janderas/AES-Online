@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Arcade Neo Geo PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{background:#0d0d0d;color:#00ff90;font-family:monospace;text-align:center}
+h1{color:#00ffcc}
+#game{width:800px;height:600px;margin:20px auto;border:3px solid #00ff90;box-shadow:0 0 20px #00ff90}
+.panel{margin:15px auto;padding:15px;border:1px solid #333;width:80%;max-width:500px;background:#111}
+input,select,button{margin:10px;padding:8px}
+button{background:#00ff90;color:black;border:none;cursor:pointer;font-weight:bold}
+button:hover{background:#00cc70}
+#status{margin-top:10px;font-size:14px;color:#ccc}
+.error{color:#ff5555}
+.success{color:#55ff55}
+</style>
+</head>
+<body>
+
+<h1>🕹️ Arcade Neo Geo PRO</h1>
+
+<div class="panel">
+  <h3>Subir ROM(s)</h3>
+  <input type="file" id="romInput" accept=".zip" multiple>
+</div>
+
+<div class="panel">
+  <h3>Elegir juego</h3>
+  <select id="romSelector"></select><br>
+  <button onclick="startGame()">▶ INICIAR</button>
+  <div id="status"></div>
+</div>
+
+<div id="game"></div>
+
+<script>
+let romList=[];
+
+// Lista básica de ROMs compatibles conocidas
+const knownRoms=[
+"mslug.zip","mslug2.zip","mslug3.zip",
+"kof98.zip","kof97.zip","kof99.zip",
+"samsho2.zip","samsho3.zip",
+"turfmast.zip"
+];
+
+// Cargar ROMs
+document.getElementById('romInput').addEventListener('change',function(e){
+  romList=[...e.target.files];
+  const selector=document.getElementById('romSelector');
+  selector.innerHTML='';
+
+  romList.forEach((file,index)=>{
+    const option=document.createElement('option');
+    option.value=index;
+    option.textContent=file.name;
+    selector.appendChild(option);
+  });
+});
+
+function setStatus(msg,type){
+  const s=document.getElementById('status');
+  s.className=type;
+  s.textContent=msg;
+}
+
+// Validación automática
+function validateRom(file){
+  const name=file.name.toLowerCase();
+
+  if(!name.endsWith('.zip')){
+    return {ok:false,msg:"❌ Debe ser archivo ZIP"};
+  }
+
+  if(knownRoms.includes(name)){
+    return {ok:true,msg:"✅ ROM reconocida compatible"};
+  }
+
+  // heurística básica
+  if(name.includes("neogeo") || name.length<5){
+    return {ok:false,msg:"❌ ROM sospechosa"};
+  }
+
+  return {ok:true,msg:"⚠️ ROM no verificada, puede fallar"};
+}
+
+// Iniciar
+function startGame(){
+  const selector=document.getElementById('romSelector');
+
+  if(selector.value===''){
+    setStatus("❌ Selecciona una ROM","error");
+    return;
+  }
+
+  const romFile=romList[selector.value];
+  const result=validateRom(romFile);
+
+  setStatus(result.msg,result.ok?"success":"error");
+
+  if(!result.ok){return;}
+
+  const romURL=URL.createObjectURL(romFile);
+
+  document.getElementById('game').innerHTML="";
+
+  window.EJS_player="#game";
+  window.EJS_core="fbneo";
+  window.EJS_gameUrl=romURL;
+  window.EJS_pathtodata="https://cdn.emulatorjs.org/stable/data/";
+
+  window.EJS_startOnLoaded=true;
+  window.EJS_fullscreenOnLoaded=true;
+  window.EJS_touchControls=true;
+  window.EJS_enableSavestates=true;
+
+  const script=document.createElement("script");
+  script.src="https://cdn.emulatorjs.org/stable/data/loader.js";
+  document.body.appendChild(script);
+}
+</script>
+
+</body>
+</html>
